@@ -202,8 +202,8 @@ app.get('/api/projects', optionalAuth, async (req, res) => {
     const projects = await db.collection('projects')
       .find(query)
       .sort({ created: -1 })
-      .limit(parseInt(limit))
       .skip(parseInt(offset))
+      .limit(parseInt(limit))
       .toArray();
     
     res.json(projects);
@@ -342,8 +342,8 @@ app.get('/api/discussions', optionalAuth, async (req, res) => {
     const discussions = await db.collection('discussions')
       .find(query)
       .sort({ created: -1 })
-      .limit(parseInt(limit))
       .skip(parseInt(offset))
+      .limit(parseInt(limit))
       .toArray();
     
     res.json(discussions);
@@ -437,8 +437,8 @@ app.get('/api/lessons', optionalAuth, async (req, res) => {
     const lessons = await db.collection('lessons')
       .find(query)
       .sort({ created: -1 })
-      .limit(parseInt(limit))
       .skip(parseInt(offset))
+      .limit(parseInt(limit))
       .toArray();
     
     res.json(lessons);
@@ -497,8 +497,8 @@ app.get('/api/rooms', optionalAuth, async (req, res) => {
     const rooms = await db.collection('rooms')
       .find({ status })
       .sort({ created: -1 })
-      .limit(parseInt(limit))
       .skip(parseInt(offset))
+      .limit(parseInt(limit))
       .toArray();
     
     res.json(rooms);
