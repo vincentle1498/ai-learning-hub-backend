@@ -12,17 +12,37 @@ const connectDB = async () => {
     const connectionString = process.env.DATABASE_URL || 
       `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
     
+    // Log connection attempt (hide password)
+    const sanitized = connectionString.replace(/:([^@]+)@/, ':****@');
     console.log('🔄 Connecting to PostgreSQL (Supabase)...');
+    console.log('📍 Connection string:', sanitized);
     
-    pool = new Pool({
+    // Parse connection string and force IPv4
+    const config = {
       connectionString,
       ssl: {
         rejectUnauthorized: false // Required for Supabase
       },
       max: 10, // Maximum number of clients in the pool
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
-    });
+      connectionTimeoutMillis: 10000,
+    };
+    
+    // Force IPv4 for Render compatibility
+    if (process.env.NODE_ENV === 'production') {
+      // Extract host from connection string
+      const match = connectionString.match(/(@db\.)([^.]+)(\.supabase\.co)/);
+      if (match) {
+        config.host = `db.${match[2]}.supabase.co`;
+        config.port = 5432;
+        config.database = 'postgres';
+        config.user = 'postgres';
+        config.password = connectionString.match(/:([^@]+)@/)[1];
+        delete config.connectionString; // Use individual params instead
+      }
+    }
+    
+    pool = new Pool(config);
     
     // Test the connection
     const client = await pool.connect();
