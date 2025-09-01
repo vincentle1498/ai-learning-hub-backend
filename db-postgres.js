@@ -236,12 +236,37 @@ const getDB = () => {
   return {
     collection: (name) => ({
       findOne: async (query) => {
-        const whereClause = buildWhereClause(query);
+        // Map MongoDB fields to PostgreSQL columns
+        const mappedQuery = {};
+        const fieldMap = {
+          '_id': 'id',
+          'apiKey': 'api_key'
+        };
+        
+        for (const [key, value] of Object.entries(query)) {
+          const column = fieldMap[key] || key;
+          mappedQuery[column] = value;
+        }
+        
+        const whereClause = buildWhereClause(mappedQuery);
         const result = await pool.query(
           `SELECT * FROM ${name} WHERE ${whereClause.text} LIMIT 1`,
           whereClause.values
         );
-        return result.rows[0] || null;
+        
+        // Map PostgreSQL columns back to MongoDB field names
+        if (result.rows[0]) {
+          const row = result.rows[0];
+          return {
+            _id: row.id,
+            ...row,
+            apiKey: row.api_key,
+            userId: row.user_id,
+            created: row.created_at,
+            lastActive: row.last_active
+          };
+        }
+        return null;
       },
       
       find: (query = {}) => {
@@ -269,8 +294,32 @@ const getDB = () => {
       },
       
       insertOne: async (doc) => {
-        const columns = Object.keys(doc).filter(k => k !== '_id');
-        const values = columns.map(k => doc[k]);
+        // Map MongoDB field names to PostgreSQL columns
+        const fieldMap = {
+          '_id': 'id',
+          'userId': 'user_id',
+          'apiKey': 'api_key',
+          'created': 'created_at',
+          'lastActive': 'last_active',
+          'authorId': 'author_id',
+          'authorName': 'author_name',
+          'updated': 'updated_at',
+          'ownerId': 'owner_id',
+          'ownerName': 'owner_name',
+          'discussionId': 'discussion_id',
+          'githubUrl': 'github_url',
+          'demoUrl': 'demo_url',
+          'maxParticipants': 'max_participants'
+        };
+        
+        const mappedDoc = {};
+        for (const [key, value] of Object.entries(doc)) {
+          const column = fieldMap[key] || key;
+          mappedDoc[column] = value;
+        }
+        
+        const columns = Object.keys(mappedDoc).filter(k => k !== 'id');
+        const values = columns.map(k => mappedDoc[k]);
         const placeholders = columns.map((_, i) => `$${i + 1}`);
         
         const result = await pool.query(
