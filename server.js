@@ -620,8 +620,12 @@ const startServer = async () => {
       console.log('✅ MONGODB_URI environment variable found');
     }
     
-    // Remove TLS workaround - not needed for Atlas
-    // MongoDB Atlas handles TLS properly
+    // For Render + MongoDB Atlas compatibility
+    if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
+      // Node 18 SSL workaround for MongoDB on Render
+      process.env.NODE_OPTIONS = '--openssl-legacy-provider';
+      console.log('🔧 Applied OpenSSL legacy provider for MongoDB compatibility');
+    }
     
     await connectDB();
     
