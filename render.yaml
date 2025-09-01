@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ai-learning-hub
+    runtime: node
+    rootDir: .
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
