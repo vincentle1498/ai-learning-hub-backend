@@ -12,10 +12,16 @@ const connectDB = async () => {
     const connectionString = process.env.DATABASE_URL || 
       `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
     
-    // Log connection attempt (hide password)
+    // Log connection attempt (hide password but show username)
     const sanitized = connectionString.replace(/:([^@]+)@/, ':****@');
     console.log('🔄 Connecting to PostgreSQL (Supabase)...');
     console.log('📍 Connection string:', sanitized);
+    
+    // Extract and log username for debugging
+    const usernameMatch = connectionString.match(/postgresql:\/\/([^:]+):/);
+    if (usernameMatch) {
+      console.log('👤 Username:', usernameMatch[1]);
+    }
     
     // Parse connection string and force IPv4
     const config = {
