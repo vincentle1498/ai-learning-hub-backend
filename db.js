@@ -8,6 +8,13 @@ let client = null;
 const useFileDB = process.env.USE_FILE_DB === 'true';
 
 const connectDB = async () => {
+  // Use PostgreSQL if configured
+  if (process.env.DATABASE_URL || process.env.DB_HOST) {
+    console.log('📘 PostgreSQL configured, using Supabase...');
+    const postgresDB = require('./db-postgres');
+    return await postgresDB.connectDB();
+  }
+  
   // If forced to use file DB or on Render with connection issues
   if (useFileDB || (process.env.NODE_ENV === 'production' && !process.env.MONGODB_URI)) {
     const fileDB = require('./db-file');
@@ -114,6 +121,12 @@ const createIndexes = async () => {
 };
 
 const getDB = () => {
+  // Use PostgreSQL if configured
+  if (process.env.DATABASE_URL || process.env.DB_HOST) {
+    const postgresDB = require('./db-postgres');
+    return postgresDB.getDB();
+  }
+  
   if (useFileDB || (process.env.NODE_ENV === 'production' && !client)) {
     const fileDB = require('./db-file');
     return fileDB.getDB();
