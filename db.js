@@ -29,28 +29,14 @@ const connectDB = async () => {
     console.log('📍 Node version:', process.version);
     console.log('🌍 Environment:', process.env.NODE_ENV || 'development');
     
-    // MongoDB Atlas connection options
+    // MongoDB Atlas connection options - simplified for better compatibility
     const options = {
-      serverSelectionTimeoutMS: 15000, // Increase timeout for Render
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 20000,
       socketTimeoutMS: 45000,
-      family: 4, // Force IPv4
-      retryWrites: true,
-      w: 'majority'
+      family: 4 // Force IPv4
     };
-    
-    // Special handling for MongoDB Atlas on Render
-    if (process.env.NODE_ENV === 'production') {
-      // Add TLS options for production
-      options.tls = true;
-      options.tlsAllowInvalidCertificates = true; // Required for some Render deployments
-      options.tlsAllowInvalidHostnames = true;
-      options.directConnection = false;
-      options.serverApi = {
-        version: '1',
-        strict: true,
-        deprecationErrors: true
-      };
-    }
     
     client = new MongoClient(uri, options);
     

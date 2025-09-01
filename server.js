@@ -620,11 +620,8 @@ const startServer = async () => {
       console.log('✅ MONGODB_URI environment variable found');
     }
     
-    // Add NODE_TLS_REJECT_UNAUTHORIZED workaround for SSL issues
-    if (process.env.NODE_ENV === 'production') {
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      console.log('🔓 SSL validation bypassed for production (Render deployment)');
-    }
+    // Remove TLS workaround - not needed for Atlas
+    // MongoDB Atlas handles TLS properly
     
     await connectDB();
     
