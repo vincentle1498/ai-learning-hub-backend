@@ -45,10 +45,6 @@ const connectDB = async () => {
         host: host,
         port: parseInt(port),
         database: database.split('?')[0], // Remove query params from database name
-        ssl: {
-          rejectUnauthorized: false,
-          require: true
-        },
         // Force IPv4
         keepAlive: true,
         keepAliveInitialDelayMillis: 0,
@@ -60,8 +56,20 @@ const connectDB = async () => {
       // Add specific settings for pooler
       if (connectionString.includes('.pooler.supabase.com')) {
         console.log('🔄 Using Supabase pooler connection');
-        config.statement_timeout = 0;
-        config.idle_in_transaction_session_timeout = 0;
+        // For pooler, try using connection string directly with minimal config
+        config = {
+          connectionString: connectionString + (connectionString.includes('?') ? '&' : '?') + 'sslmode=require',
+          ssl: true,
+          max: 10,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 15000,
+        };
+      } else {
+        // Direct connection SSL
+        config.ssl = {
+          rejectUnauthorized: false,
+          require: true
+        };
       }
     } else {
       // Fallback - this shouldn't happen
