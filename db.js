@@ -36,16 +36,20 @@ const connectDB = async () => {
       family: 4 // Force IPv4
     };
     
-    // For Render deployment, bypass SSL issues
+    // For Render deployment, handle SSL differently based on connection type
     if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
-      // Try connecting without explicit TLS settings
       console.log('🔐 Using Render-compatible connection settings');
       
-      // If the URI uses mongodb+srv, let the driver handle TLS automatically
+      // For standard mongodb:// connections
       if (!uri.startsWith('mongodb+srv://')) {
-        options.tls = true;
-        options.tlsAllowInvalidCertificates = true;
+        // Try without SSL first since Render has issues with it
+        if (uri.includes('ssl=true')) {
+          uri = uri.replace('ssl=true', 'ssl=false');
+          console.log('🔄 Disabled SSL in connection string for Render compatibility');
+        }
+        options.tls = false;
       }
+      // For mongodb+srv://, let driver handle it
     } else {
       // Non-Render environments
       options.tls = true;

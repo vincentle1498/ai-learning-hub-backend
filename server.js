@@ -622,9 +622,9 @@ const startServer = async () => {
     
     // For Render + MongoDB Atlas compatibility
     if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
-      // Node 18 SSL workaround for MongoDB on Render
-      process.env.NODE_OPTIONS = '--openssl-legacy-provider';
-      console.log('🔧 Applied OpenSSL legacy provider for MongoDB compatibility');
+      // Disable SSL certificate validation for MongoDB connection
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      console.log('🔧 Disabled TLS certificate validation for MongoDB compatibility');
     }
     
     await connectDB();
