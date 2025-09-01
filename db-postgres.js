@@ -28,17 +28,24 @@ const connectDB = async () => {
       connectionTimeoutMillis: 10000,
     };
     
-    // Force IPv4 for Render compatibility
+    // Handle Supabase pooler connection format
     if (process.env.NODE_ENV === 'production') {
-      // Extract host from connection string
-      const match = connectionString.match(/(@db\.)([^.]+)(\.supabase\.co)/);
-      if (match) {
-        config.host = `db.${match[2]}.supabase.co`;
-        config.port = 5432;
-        config.database = 'postgres';
-        config.user = 'postgres';
-        config.password = connectionString.match(/:([^@]+)@/)[1];
-        delete config.connectionString; // Use individual params instead
+      // Check if using pooler (has .pooler.supabase.com)
+      if (connectionString.includes('.pooler.supabase.com')) {
+        // Pooler uses different username format: postgres.projectid
+        // The connection string parser should handle this correctly
+        console.log('🔄 Using Supabase pooler connection');
+      } else {
+        // Direct connection - extract components for IPv4
+        const match = connectionString.match(/(@db\.)([^.]+)(\.supabase\.co)/);
+        if (match) {
+          config.host = `db.${match[2]}.supabase.co`;
+          config.port = 5432;
+          config.database = 'postgres';
+          config.user = 'postgres';
+          config.password = connectionString.match(/:([^@]+)@/)[1];
+          delete config.connectionString; // Use individual params instead
+        }
       }
     }
     
