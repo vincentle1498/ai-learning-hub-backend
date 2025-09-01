@@ -18,27 +18,38 @@ const connectDB = async () => {
     
     let uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-learning-hub';
     
+    // Ensure the connection string includes the database name
+    if (uri.includes('mongodb.net/') && !uri.includes('mongodb.net/ai-learning-hub')) {
+      uri = uri.replace('mongodb.net/', 'mongodb.net/ai-learning-hub');
+    }
+    
     // Log connection attempt (hide password)
     const sanitizedUri = uri.replace(/:([^@]+)@/, ':****@');
     console.log('🔄 Attempting to connect to MongoDB:', sanitizedUri);
     console.log('📍 Node version:', process.version);
+    console.log('🌍 Environment:', process.env.NODE_ENV || 'development');
     
-    // Render-compatible options for MongoDB Atlas
+    // MongoDB Atlas connection options
     const options = {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 15000, // Increase timeout for Render
       socketTimeoutMS: 45000,
       family: 4, // Force IPv4
-      authSource: 'admin',
-      tls: true,
-      tlsAllowInvalidCertificates: false, // Use valid certs for Atlas
       retryWrites: true,
       w: 'majority'
     };
     
-    // For mongodb+srv:// use default SSL
-    if (uri.startsWith('mongodb+srv://')) {
-      delete options.tls;
-      delete options.tlsAllowInvalidCertificates;
+    // Special handling for MongoDB Atlas on Render
+    if (process.env.NODE_ENV === 'production') {
+      // Add TLS options for production
+      options.tls = true;
+      options.tlsAllowInvalidCertificates = true; // Required for some Render deployments
+      options.tlsAllowInvalidHostnames = true;
+      options.directConnection = false;
+      options.serverApi = {
+        version: '1',
+        strict: true,
+        deprecationErrors: true
+      };
     }
     
     client = new MongoClient(uri, options);
