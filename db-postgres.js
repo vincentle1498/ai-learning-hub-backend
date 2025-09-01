@@ -23,36 +23,62 @@ const connectDB = async () => {
       console.log('👤 Username:', usernameMatch[1]);
     }
     
-    // Parse connection string and force IPv4
-    const config = {
-      connectionString,
-      ssl: {
-        rejectUnauthorized: false // Required for Supabase
-      },
-      max: 10, // Maximum number of clients in the pool
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-    };
+    // Parse connection string manually for better control
+    let config;
     
-    // Handle Supabase pooler connection format
-    if (process.env.NODE_ENV === 'production') {
-      // Check if using pooler (has .pooler.supabase.com)
-      if (connectionString.includes('.pooler.supabase.com')) {
-        // Pooler uses different username format: postgres.projectid
-        // The connection string parser should handle this correctly
-        console.log('🔄 Using Supabase pooler connection');
+    // Check if using pooler connection
+    if (connectionString.includes('.pooler.supabase.com')) {
+      console.log('🔄 Using Supabase pooler connection');
+      
+      // Parse pooler connection string manually
+      // Format: postgresql://postgres.projectid:password@host:port/database
+      const urlParts = connectionString.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
+      
+      if (urlParts) {
+        const [, username, password, host, port, database] = urlParts;
+        console.log('🔧 Parsed connection - User:', username, 'Host:', host, 'Port:', port);
+        
+        config = {
+          user: username,
+          password: password,
+          host: host,
+          port: parseInt(port),
+          database: database,
+          ssl: {
+            rejectUnauthorized: false,
+            require: true,
+            mode: 'require'
+          },
+          // Pooler-specific settings
+          statement_timeout: 0,
+          idle_in_transaction_session_timeout: 0,
+          max: 10,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 10000,
+        };
       } else {
-        // Direct connection - extract components for IPv4
-        const match = connectionString.match(/(@db\.)([^.]+)(\.supabase\.co)/);
-        if (match) {
-          config.host = `db.${match[2]}.supabase.co`;
-          config.port = 5432;
-          config.database = 'postgres';
-          config.user = 'postgres';
-          config.password = connectionString.match(/:([^@]+)@/)[1];
-          delete config.connectionString; // Use individual params instead
-        }
+        // Fallback to connection string
+        config = {
+          connectionString,
+          ssl: {
+            rejectUnauthorized: false
+          },
+          max: 10,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 10000,
+        };
       }
+    } else {
+      // Standard connection
+      config = {
+        connectionString,
+        ssl: {
+          rejectUnauthorized: false
+        },
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+      };
     }
     
     pool = new Pool(config);
