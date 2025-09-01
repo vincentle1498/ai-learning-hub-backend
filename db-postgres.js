@@ -1,5 +1,10 @@
 const { Pool } = require('pg');
+const dns = require('dns');
+const { promisify } = require('util');
 require('dotenv').config();
+
+// Force DNS to use IPv4
+dns.setDefaultResultOrder('ipv4first');
 
 let pool = null;
 
@@ -26,50 +31,41 @@ const connectDB = async () => {
     // Parse connection string manually for better control
     let config;
     
-    // Check if using pooler connection
-    if (connectionString.includes('.pooler.supabase.com')) {
-      console.log('🔄 Using Supabase pooler connection');
+    // Always parse connection string manually to avoid IPv6 issues
+    const urlParts = connectionString.match(/postgresql:\/\/([^:]+):([^@]+)@([^:\/]+):?(\d+)?\/(.+?)(\?.*)?$/);
+    
+    if (urlParts) {
+      const [, username, password, host, port = '5432', database] = urlParts;
+      console.log('🔧 Parsed connection - User:', username, 'Host:', host, 'Port:', port);
       
-      // Parse pooler connection string manually
-      // Format: postgresql://postgres.projectid:password@host:port/database
-      const urlParts = connectionString.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
+      // Force IPv4 by using individual connection parameters
+      config = {
+        user: username,
+        password: password,
+        host: host,
+        port: parseInt(port),
+        database: database.split('?')[0], // Remove query params from database name
+        ssl: {
+          rejectUnauthorized: false,
+          require: true
+        },
+        // Force IPv4
+        keepAlive: true,
+        keepAliveInitialDelayMillis: 0,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 15000,
+      };
       
-      if (urlParts) {
-        const [, username, password, host, port, database] = urlParts;
-        console.log('🔧 Parsed connection - User:', username, 'Host:', host, 'Port:', port);
-        
-        config = {
-          user: username,
-          password: password,
-          host: host,
-          port: parseInt(port),
-          database: database,
-          ssl: {
-            rejectUnauthorized: false,
-            require: true,
-            mode: 'require'
-          },
-          // Pooler-specific settings
-          statement_timeout: 0,
-          idle_in_transaction_session_timeout: 0,
-          max: 10,
-          idleTimeoutMillis: 30000,
-          connectionTimeoutMillis: 10000,
-        };
-      } else {
-        // Fallback to connection string
-        config = {
-          connectionString,
-          ssl: {
-            rejectUnauthorized: false
-          },
-          max: 10,
-          idleTimeoutMillis: 30000,
-          connectionTimeoutMillis: 10000,
-        };
+      // Add specific settings for pooler
+      if (connectionString.includes('.pooler.supabase.com')) {
+        console.log('🔄 Using Supabase pooler connection');
+        config.statement_timeout = 0;
+        config.idle_in_transaction_session_timeout = 0;
       }
     } else {
-      // Standard connection
+      // Fallback - this shouldn't happen
+      console.log('⚠️ Could not parse connection string, using as-is');
       config = {
         connectionString,
         ssl: {
