@@ -35,7 +35,17 @@ const authLimiter = rateLimit({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://ailearninghubs.netlify.app',
+    'https://ai-learning-hub-frontend.netlify.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'X-API-Key', 'Authorization']
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use('/api', limiter);
 app.use('/api/auth', authLimiter);
