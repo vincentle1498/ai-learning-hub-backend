@@ -107,14 +107,20 @@ app.post('/api/auth/register', (req, res) => {
     const existingUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
     if (existingUser) {
       console.log('❌ Username already taken:', username);
-      return res.status(400).json({ error: 'Username already taken' });
+      return res.status(400).json({ 
+        error: 'Username already taken. Please sign in with your existing account or choose a different username.',
+        redirect: 'login'
+      });
     }
     
     // Check if email already exists
     const existingEmail = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (existingEmail) {
       console.log('❌ Email already registered:', email);
-      return res.status(400).json({ error: 'Email already registered' });
+      return res.status(400).json({ 
+        error: 'An account with this email already exists. Please sign in with your existing account.',
+        redirect: 'login'
+      });
     }
     
     // Create new user
