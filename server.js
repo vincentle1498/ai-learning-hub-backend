@@ -17,6 +17,16 @@ app.use(express.json({ limit: '10mb' }));
 console.log('✅ Middleware configured');
 
 // Simple in-memory storage - NO DATABASE REQUIRED
+let users = [
+  {
+    id: 'system',
+    username: 'System',
+    email: 'system@ailearninghub.com',
+    password: 'system', // In real app, this would be hashed
+    created: new Date().toISOString()
+  }
+];
+
 let discussions = [
   {
     id: 'welcome_simple',
@@ -80,6 +90,96 @@ app.get('/api/test', (req, res) => {
     discussions_available: discussions.length > 0,
     cross_user_sharing: 'ACTIVE'
   });
+});
+
+// =============== USER AUTHENTICATION ===============
+app.post('/api/auth/register', (req, res) => {
+  console.log('📍 POST /api/auth/register');
+  try {
+    const { username, email, password } = req.body;
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Username, email, and password are required' });
+    }
+    
+    // Check if username already exists
+    const existingUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (existingUser) {
+      console.log('❌ Username already taken:', username);
+      return res.status(400).json({ error: 'Username already taken' });
+    }
+    
+    // Check if email already exists
+    const existingEmail = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (existingEmail) {
+      console.log('❌ Email already registered:', email);
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    
+    // Create new user
+    const newUser = {
+      id: 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      username: username.trim(),
+      email: email.trim().toLowerCase(),
+      password: password, // In real app, this would be hashed
+      created: new Date().toISOString()
+    };
+    
+    users.push(newUser);
+    console.log('✅ User registered:', newUser.username);
+    
+    // Return user without password
+    const { password: _, ...userResponse } = newUser;
+    res.json({ 
+      success: true, 
+      message: 'User registered successfully',
+      user: userResponse 
+    });
+  } catch (error) {
+    console.error('❌ Error registering user:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/auth/login', (req, res) => {
+  console.log('📍 POST /api/auth/login');
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+    
+    // Find user by username or email
+    const user = users.find(u => 
+      u.username.toLowerCase() === username.toLowerCase() || 
+      u.email.toLowerCase() === username.toLowerCase()
+    );
+    
+    if (!user) {
+      console.log('❌ User not found:', username);
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+    
+    // Check password
+    if (user.password !== password) {
+      console.log('❌ Invalid password for user:', username);
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+    
+    console.log('✅ User logged in:', user.username);
+    
+    // Return user without password
+    const { password: _, ...userResponse } = user;
+    res.json({ 
+      success: true, 
+      message: 'Login successful',
+      user: userResponse 
+    });
+  } catch (error) {
+    console.error('❌ Error logging in user:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // =============== DISCUSSIONS ===============
