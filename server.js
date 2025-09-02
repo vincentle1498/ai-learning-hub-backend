@@ -95,6 +95,7 @@ app.get('/api/test', (req, res) => {
 // =============== USER AUTHENTICATION ===============
 app.post('/api/auth/register', (req, res) => {
   console.log('📍 POST /api/auth/register');
+  console.log('📋 Request body:', req.body);
   try {
     const { username, email, password } = req.body;
     
@@ -143,6 +144,7 @@ app.post('/api/auth/register', (req, res) => {
 
 app.post('/api/auth/login', (req, res) => {
   console.log('📍 POST /api/auth/login');
+  console.log('📋 Request body:', req.body);
   try {
     const { username, password } = req.body;
     
